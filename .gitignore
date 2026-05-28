@@ -1,0 +1,26 @@
+# Local config (never commit secrets)
+config/server.env
+.env
+*.env.local
+
+# Runtime / build artifacts
+server-files/
+backups/
+*.log
+*.bak
+*.tmp
+
+# Kubernetes secrets (commit only the .example.yaml template)
+k8s/secret.yaml
+
+# Editor / OS junk
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build outputs
+dist/
+build/

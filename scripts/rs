@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# rs — Romestead dedicated server CLI. Dispatches subcommands to lib/ modules.
+set -euo pipefail
+
+# Resolve the directory of this script so we can source siblings regardless of
+# where it's invoked from (PATH symlink, `docker exec`, direct call).
+RS_BIN_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+export RS_BIN_DIR
+
+# shellcheck source=lib/common.sh
+source "$RS_BIN_DIR/lib/common.sh"
+# shellcheck source=lib/config.sh
+source "$RS_BIN_DIR/lib/config.sh"
+# shellcheck source=lib/depot.sh
+source "$RS_BIN_DIR/lib/depot.sh"
+# shellcheck source=lib/settings.sh
+source "$RS_BIN_DIR/lib/settings.sh"
+# shellcheck source=lib/server.sh
+source "$RS_BIN_DIR/lib/server.sh"
+# shellcheck source=lib/backup.sh
+source "$RS_BIN_DIR/lib/backup.sh"
+
+rs::config::load
+
+rs::usage() {
+  cat <<EOF
+Usage: rs <command> [args]
+
+Commands:
+  install            Download dedicated server files (DepotDownloader, app ${STEAM_APP_ID:-4763510}).
+  update             Re-run DepotDownloader against the current branch — no-op if up to date.
+  run                Render config and exec the dotnet server in the foreground (default).
+  backup             tar.gz the save dir into BACKUP_DIR with a timestamped name.
+  config             Render config.json into the install dir and exit.
+  shell              Open an interactive bash inside the container.
+  send <command>     Send a console command (e.g. 'save', 'stop') to the running server via FIFO.
+  health             Run the A2S healthcheck probe and print the result.
+  version            Print the image version metadata.
+  help               Show this message.
+
+Common env vars (full list in config/server.example.env):
+  STEAM_APP_ID      Romestead dedicated server depot           (default: 4763510)
+  INSTALL_DIR       Where DepotDownloader writes game files    (default: /mnt/steam/server-files)
+  BACKUP_DIR        Where backup tarballs land                 (default: /mnt/steam/backups)
+  PORT              UDP game + query port                      (default: 8050)
+  MAX_PLAYERS       Player slot cap                            (default: 8)
+  PASSWORD          Server password (empty = open)
+  GENERATE_SETTINGS Set false to keep hand-edits to config.json
+EOF
+}
+
+cmd="${1:-help}"
+[[ $# -gt 0 ]] && shift || true
+
+case "$cmd" in
+  install)  rs::depot::install            ;;
+  update)   rs::depot::update             ;;
+  run)      rs::server::run               ;;
+  backup)   rs::backup::create            ;;
+  config)   rs::settings::compile         ;;
+  send)     rs::server::send "$@"         ;;
+  health)   python3 /opt/healthcheck.py && rs::log::ok "healthy" || { rs::log::error "unhealthy"; exit 1; } ;;
+  shell)    exec bash -l                  ;;
+  version)  rs::version                   ;;
+  help|-h|--help) rs::usage                ;;
+  *)        rs::log::error "unknown command: $cmd"; rs::usage >&2; exit 64 ;;
+esac

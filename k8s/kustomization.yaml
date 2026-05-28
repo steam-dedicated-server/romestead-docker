@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace creation is intentionally out-of-band — leave that to the operator
+# (RBAC / quota / pod-security-policy can differ per cluster).
+#
+#   kubectl create namespace romestead
+#   kubectl -n romestead apply -k k8s/
+
+resources:
+  - pvc.yaml
+  - install-job.yaml
+  - deployment.yaml
+  - backup-cronjob.yaml
+
+# secret.yaml is gitignored — apply it separately:
+#   kubectl -n romestead apply -f k8s/secret.yaml
+
+commonLabels:
+  app.kubernetes.io/name: romestead
+  app.kubernetes.io/part-of: romestead-docker
+
+images:
+  - name: ghcr.io/0xkernel/romestead-docker
+    newTag: latest

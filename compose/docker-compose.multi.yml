@@ -1,0 +1,76 @@
+# Multi-server skeleton — two Romestead realms on one host.
+#
+# Romestead writes saves under <INSTALL_DIR>/Worlds (inside the install dir),
+# which means one shared volume is safe: both realms read the same depot but
+# isolate their worlds via AUTO_START_WORLD_NAME / world subdirectory.
+#
+# Each realm needs its own UDP port and container name. Add more by copying
+# the `realm-02` block and bumping the digits.
+
+x-image: &image ghcr.io/0xkernel/romestead-docker:latest
+
+x-common: &common
+  image: *image
+  env_file:
+    - ../config/server.env
+  volumes:
+    - romestead-data:/mnt/steam
+  security_opt:
+    - seccomp:unconfined
+  ulimits:
+    nofile:
+      soft: 1048576
+      hard: 1048576
+  init: false
+  tmpfs:
+    - /tmp:size=256m
+  stop_grace_period: 60s
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  realm-01:
+    <<: *common
+    container_name: romestead-realm-01
+    environment:
+      PORT: 8050
+      AUTO_START_WORLD_NAME: Realm-01
+      MAX_PLAYERS: 16
+    ports:
+      - "8050:8050/udp"
+    command: ["run"]
+
+  realm-02:
+    <<: *common
+    container_name: romestead-realm-02
+    environment:
+      PORT: 8060
+      AUTO_START_WORLD_NAME: Realm-02
+      MAX_PLAYERS: 16
+    ports:
+      - "8060:8060/udp"
+    command: ["run"]
+
+  # One-shot install / update applies to BOTH realms because they share the
+  # depot. Run once after pulling a new image, then restart the realms.
+  install:
+    <<: *common
+    profiles: ["maintenance"]
+    container_name: romestead-install
+    command: ["install"]
+    restart: "no"
+
+  update:
+    <<: *common
+    profiles: ["maintenance"]
+    container_name: romestead-update
+    command: ["update"]
+    restart: "no"
+
+volumes:
+  romestead-data:
+    name: romestead-data

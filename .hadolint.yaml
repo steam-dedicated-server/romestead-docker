@@ -1,0 +1,5 @@
+# DL3008: don't pin apt versions — packages get security updates without rebuilds
+# DL3009: cache mounts replace `rm -rf /var/lib/apt/lists` (BuildKit feature)
+ignored:
+  - DL3008
+  - DL3009

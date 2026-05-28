@@ -1,0 +1,87 @@
+# Single-server, production-tuned Compose file.
+# Run from the repo root:  docker compose -f compose/docker-compose.yml up -d server
+
+x-image: &image ghcr.io/0xkernel/romestead-docker:latest
+
+x-common: &common
+  image: *image
+  env_file:
+    - ../config/server.env
+  volumes:
+    - romestead-data:/mnt/steam
+  # steamcmd / dotnet runtime tickle blocked syscalls (sys_admin scopes,
+  # io_uring). Unconfined seccomp is the same lever upstream uses.
+  security_opt:
+    - seccomp:unconfined
+  # nofile=1048576: UE/Source defaults are too low for many concurrent
+  # connections; .NET inherits the same headroom for socket handles.
+  ulimits:
+    nofile:
+      soft: 1048576
+      hard: 1048576
+  # tini is baked into the image as PID 1; tell Compose to skip its own init.
+  init: false
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
+
+services:
+  server:
+    <<: *common
+    container_name: romestead-server
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8050}:${PORT:-8050}/udp"
+    # /tmp is hot — keep it on tmpfs to avoid volume churn.
+    tmpfs:
+      - /tmp:size=256m
+    # Flush saves on shutdown before SIGKILL.
+    stop_grace_period: 60s
+    # Cold boot: depot validate + world create can take 60-90s on first run.
+    # Steady state probes still hit every 30s.
+    healthcheck:
+      test: ["CMD", "python3", "/opt/healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 6G
+        reservations:
+          cpus: "1.0"
+          memory: 2G
+    # `rs run` is the image's CMD; declared here for clarity.
+    command: ["run"]
+
+  # ── Maintenance one-shots ──────────────────────────────────────────────────
+  # All gated behind --profile maintenance so `docker compose up` doesn't
+  # start them.
+  install:
+    <<: *common
+    profiles: ["maintenance"]
+    container_name: romestead-install
+    command: ["install"]
+    restart: "no"
+
+  update:
+    <<: *common
+    profiles: ["maintenance"]
+    container_name: romestead-update
+    command: ["update"]
+    restart: "no"
+
+  backup:
+    <<: *common
+    profiles: ["maintenance"]
+    container_name: romestead-backup
+    command: ["backup"]
+    restart: "no"
+
+volumes:
+  romestead-data:
+    name: romestead-data

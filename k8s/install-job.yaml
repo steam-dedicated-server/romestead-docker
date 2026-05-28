@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: romestead-install
+  labels:
+    app.kubernetes.io/name: romestead
+    app.kubernetes.io/component: install
+spec:
+  # backoffLimit: 0 — surface failures immediately. DepotDownloader retries
+  # are handled inside the container via rs::retry; we don't want k8s to
+  # also restart the pod and double-retry.
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: romestead
+        app.kubernetes.io/component: install
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1001
+        fsGroup: 1001
+      initContainers:
+        # PVCs are often provisioned root-owned. Fix the mount before the
+        # main container starts so DepotDownloader can write into it.
+        - name: fix-permissions
+          image: busybox:1.36
+          command: ["sh", "-c", "chown -R 1000:1001 /mnt/steam && chmod -R u+rwX /mnt/steam"]
+          volumeMounts:
+            - { name: data, mountPath: /mnt/steam }
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+      containers:
+        - name: install
+          image: ghcr.io/0xkernel/romestead-docker:latest
+          imagePullPolicy: IfNotPresent
+          command: ["rs", "install"]
+          envFrom:
+            - secretRef: { name: romestead-config }
+          volumeMounts:
+            - { name: data, mountPath: /mnt/steam }
+          securityContext:
+            seccompProfile:
+              type: Unconfined
+          resources:
+            requests: { cpu: "500m", memory: "512Mi" }
+            limits:   { cpu: "2",    memory: "2Gi"   }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: romestead-data

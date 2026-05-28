@@ -1,0 +1,14 @@
+# Force LF on all text files so Windows porters don't see endless "LF will be
+# replaced by CRLF" warnings — and so shell scripts stay executable on Linux.
+* text=auto eol=lf
+
+# Binary excludes
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.zip   binary
+*.tar   binary
+*.gz    binary

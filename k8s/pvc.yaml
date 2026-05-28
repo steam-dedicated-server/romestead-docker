@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romestead-data
+  labels:
+    app.kubernetes.io/name: romestead
+    app.kubernetes.io/component: storage
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      # ~3 GB install footprint + worlds + backups. Bump for long-running
+      # servers or if you keep more than a week of backup tarballs.
+      storage: 20Gi
+  # storageClassName: ""   # uncomment + set if your cluster has no default

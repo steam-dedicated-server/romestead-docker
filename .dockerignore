@@ -1,0 +1,25 @@
+.git
+.github
+.gitignore
+.gitattributes
+.editorconfig
+.shellcheckrc
+.hadolint.yaml
+.dockerignore
+
+# Don't ship docs or local runtime artifacts into the build context
+README.md
+LICENSE
+*.md
+Makefile
+.claude/
+compose/
+k8s/
+server-files/
+backups/
+config/server.env
+.env
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
