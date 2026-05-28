@@ -66,7 +66,7 @@ rs::server::run() {
   rs::server::_prep_runtime
   rs::server::_open_fifo
 
-  cd "$install_dir"
+  cd "$install_dir" || rs::die "cannot cd into $install_dir"
   rs::log::action "starting Romestead dedicated server on UDP ${PORT:-8050}"
 
   # Background the engine so this shell stays alive to handle signals.
