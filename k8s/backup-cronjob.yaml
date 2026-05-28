@@ -30,7 +30,7 @@ spec:
             - name: backup
               image: ghcr.io/0xkernel/romestead-docker:latest
               imagePullPolicy: IfNotPresent
-              command: ["rs", "backup"]
+              args: ["backup"]
               envFrom:
                 - secretRef: { name: romestead-config }
               volumeMounts:

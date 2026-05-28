@@ -68,5 +68,8 @@ jobs:
 
       - name: Smoke test — CLI surface
         run: |
-          docker run --rm romestead-docker:ci rs version
-          docker run --rm romestead-docker:ci rs help
+          # ENTRYPOINT is `tini -- rs`, so the argument is the subcommand —
+          # `rs` is already implicit. `docker run image rs version` would
+          # double up and dispatch the literal string "rs" as a subcommand.
+          docker run --rm romestead-docker:ci version
+          docker run --rm romestead-docker:ci help

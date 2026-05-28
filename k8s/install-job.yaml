@@ -36,7 +36,7 @@ spec:
         - name: install
           image: ghcr.io/0xkernel/romestead-docker:latest
           imagePullPolicy: IfNotPresent
-          command: ["rs", "install"]
+          args: ["install"]
           envFrom:
             - secretRef: { name: romestead-config }
           volumeMounts:
