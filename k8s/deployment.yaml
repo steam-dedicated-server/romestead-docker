@@ -55,7 +55,7 @@ spec:
               protocol: UDP
           volumeMounts:
             - { name: data, mountPath: /mnt/steam }
-            - { name: tmp,  mountPath: /tmp       }
+            - { name: tmp, mountPath: /tmp }
           securityContext:
             seccompProfile:
               type: Unconfined
@@ -83,8 +83,8 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 2
           resources:
-            requests: { cpu: "1",   memory: "2Gi" }
-            limits:   { cpu: "4",   memory: "6Gi" }
+            requests: { cpu: "1", memory: "2Gi" }
+            limits: { cpu: "4", memory: "6Gi" }
       volumes:
         - name: data
           persistentVolumeClaim:

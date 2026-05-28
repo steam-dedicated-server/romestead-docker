@@ -46,7 +46,7 @@ spec:
               type: Unconfined
           resources:
             requests: { cpu: "500m", memory: "512Mi" }
-            limits:   { cpu: "2",    memory: "2Gi"   }
+            limits: { cpu: "2", memory: "2Gi" }
       volumes:
         - name: data
           persistentVolumeClaim:
